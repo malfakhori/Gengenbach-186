@@ -67,6 +67,62 @@ menus.forEach(id => {
 
 
 export let models = {
+  // Trees
+  ahorn: {
+    name: "Ahorn",
+    image: "assets/models/Ahorn/Ahorn.png",
+    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/Ahorn/Ahorn.glb",
+    scale: { x: 1, y: 1, z: 1 },
+    minScale: 0.1,
+    maxScale: 5,
+  },
+
+  hasel: {
+    name: "Hasel",
+    image: "assets/models/Hasel/Hasel.png",
+    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/Hasel/Hasel.glb",
+    scale: { x: 1, y: 1, z: 1 },
+    minScale: 0.1,
+    maxScale: 5,
+  },
+
+  linde: {
+    name: "Linde",
+    image: "assets/models/Linde/Linde.png",
+    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/Linde/Linde.glb",
+    scale: { x: 1, y: 1, z: 1 },
+    minScale: 0.1,
+    maxScale: 5,
+  },
+
+  platane: {
+    name: "Platane",
+    image: "assets/models/Platane/Platane.png",
+    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/Platane/Platane.glb",
+    scale: { x: 1, y: 1, z: 1 },
+    minScale: 0.1,
+    maxScale: 5,
+  },
+
+  robinie: {
+    name: "Robinie",
+    image: "assets/models/Robinie/Robinie.png",
+    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/Robinie/Robinie.glb",
+    scale: { x: 1, y: 1, z: 1 },
+    minScale: 0.1,
+    maxScale: 5,
+  },
+
+  rotbuche: {
+    name: "Rotbuche",
+    image: "assets/models/Rotbuche/Rotbuche.png",
+    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/Rotbuche/Rotbuche.glb",
+    scale: { x: 1, y: 1, z: 1 },
+    minScale: 0.1,
+    maxScale: 5,
+  },
+
+  // Existing models
   bench: {
     name: "Bench",
     image: "assets/previewImages/bench.PNG",
@@ -123,11 +179,20 @@ export let models = {
 
   fountain: {
     name: "Fountain",
-    image: "assets/models/Ahorn/Ahorn.png",
-    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/Ahorn/Ahorn.glb",
+    image: "assets/previewImages/fountain.PNG",
+    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/fountain_model/scene.gltf",
     scale: { x: 0.1, y: 0.1, z: 0.1 },
     minScale: 0.01,
     maxScale: 0.5,
+  },
+
+  street_lamp: {
+    name: "Street Lamp",
+    image: "assets/previewImages/park_light.png",
+    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/street_lamp.glb",
+    scale: { x: 0.5, y: 0.5, z: 0.5 },
+    minScale: 0.2,
+    maxScale: 5,
   },
 };
 

@@ -10,6 +10,7 @@ import {
   reportReferenceSpaceCreated,
   reportXRSessionEnded,
   reportXRSessionStarted,
+  reportSelectionEvent,
   XR_DIAGNOSTICS_ENABLED,
 } from "./ar_diagnostics.js";
 import {
@@ -32,6 +33,17 @@ export let scene;
 export let camera;
 export let geoLocation;
 let placedModelsRoot = null;
+let renderer = null;
+let arCanvas = null;
+let selectionIndicator = null;
+let selectionInputState = null;
+let selectionInputCleanup = null;
+let interactionState = "idle";
+let nextPlacedModelId = 1;
+const placedModelRegistry = new Set();
+const selectionRaycaster = new THREE.Raycaster();
+const selectionNdc = new THREE.Vector2();
+const TAP_MOVE_THRESHOLD_PX = 12;
 let localizationStatusElement = null;
 let calibrationOffset = { x: 0, y: 0, z: 0, rotationY: 0 };
 let calibrationStep = 0.25;
@@ -416,10 +428,24 @@ export function closeInfoDialog() {
 /* ========================= */
 
 export function getAllPlacedModels() {
-    return placedModelsRoot ? placedModelsRoot.children.filter(
-        child =>
-            child.isPlacedModel === true
-    ) : [];
+    return Array.from(placedModelRegistry).filter(
+        (model) => model.parent === placedModelsRoot && model.isPlacedModel === true,
+    );
+}
+
+function registerPlacedModel(model, modelConfig) {
+    if (placedModelRegistry.has(model)) return;
+
+    model.isPlacedModel = true;
+    model.modelConfig = modelConfig;
+    model.userData.placedModelId =
+        model.userData.placedModelId || `placed-model-${nextPlacedModelId++}`;
+    placedModelRegistry.add(model);
+}
+
+function unregisterPlacedModel(model) {
+    placedModelRegistry.delete(model);
+    if (model) model.isPlacedModel = false;
 }
 
 
@@ -432,13 +458,7 @@ function loadModel(filePath) {
         filePath,
         placementPosition,
         (model) => {
-
-            selectedPlacedModel =
-                model;
-
-            highlightSelectedModel();
-
-            showMenu('edit-menu');
+            selectPlacedModel(model, "placement");
         }
     );
 }
@@ -487,11 +507,7 @@ function placeModel(
             position
         );
 
-        model.isPlacedModel =
-            true;
-
-        model.modelConfig =
-            modelConfig;
+        registerPlacedModel(model, modelConfig);
 
         placedModelsRoot.add(model);
 
@@ -536,11 +552,7 @@ function placeModel(
                     position
                 );
 
-                model.isPlacedModel =
-                    true;
-
-                model.modelConfig =
-                    modelConfig;
+                registerPlacedModel(model, modelConfig);
 
                 placedModelsRoot.add(model);
 
@@ -587,167 +599,217 @@ export function selectModel(modelId) {
 }
 
 
-function selectModelFromScene(event) {
+function getActiveRaycastCamera() {
+    if (!renderer || !camera) return null;
 
-    const mouse =
-        new THREE.Vector2(
+    const xrCamera = renderer.xr.isPresenting
+        ? renderer.xr.getCamera(camera)
+        : camera;
 
-            (event.clientX /
-                window.innerWidth) *
-                2 - 1,
-
-            -(event.clientY /
-                window.innerHeight) *
-                2 + 1
-        );
-
-
-    const raycaster =
-        new THREE.Raycaster();
-
-
-    raycaster.setFromCamera(
-        mouse,
-        camera
-    );
-
-
-    const intersects =
-        raycaster.intersectObjects(
-            getAllPlacedModels(),
-            true
-        );
-
-
-    if (
-        intersects.length > 0
-    ) {
-
-        let selectedObject =
-            intersects[0].object;
-
-
-        while (
-            selectedObject.parent &&
-            selectedObject.parent !== placedModelsRoot
-        ) {
-
-            selectedObject =
-                selectedObject.parent;
-        }
-
-
-        // Reticle cannot be selected
-        if (
-            selectedObject === reticle
-        ) {
-
-            console.log(
-                "Reticle kann nicht ausgewählt werden."
-            );
-
-            return;
-        }
-
-
-        selectedPlacedModel =
-            selectedObject;
-
-
-        highlightSelectedModel();
-
-        showMenu(
-            "edit-menu"
-        );
+    // WebXR returns an ArrayCamera. In handheld AR there is normally one view;
+    // use that view because it has the live XR projection and world matrices.
+    if (xrCamera.isArrayCamera && xrCamera.cameras.length > 0) {
+        return xrCamera.cameras[0];
     }
+
+    return xrCamera;
 }
 
-
-function clearSelectedModel() {
-
-    if (selectedPlacedModel) {
-
-        selectedPlacedModel.traverse(
-            (child) => {
-
-                if (child.isMesh) {
-
-                    child.material.emissive
-                        .setHex(
-                            0x000000
-                        );
-                }
-            }
-        );
-
-
-        selectedPlacedModel =
-            null;
+function resolvePlacedModelRoot(object) {
+    let candidate = object;
+    while (candidate && candidate !== placedModelsRoot) {
+        if (placedModelRegistry.has(candidate)) return candidate;
+        candidate = candidate.parent;
     }
+    return null;
 }
 
+function hideSelectionIndicator() {
+    if (!selectionIndicator) return;
+    selectionIndicator.removeFromParent();
+    selectionIndicator.geometry.dispose();
+    selectionIndicator.material.dispose();
+    selectionIndicator = null;
+}
 
 function highlightSelectedModel() {
+    hideSelectionIndicator();
+    if (!selectedPlacedModel || !scene) return;
 
-    if (selectedPlacedModel) {
-
-        removeHighlightFromAllModels();
-
-
-        selectedPlacedModel.traverse(
-            (child) => {
-
-                if (child.isMesh) {
-
-                    child.material.emissive
-                        .setHex(
-                            0xff0000
-                        );
-                }
-            }
-        );
-    }
+    selectedPlacedModel.updateWorldMatrix(true, true);
+    selectionIndicator = new THREE.BoxHelper(selectedPlacedModel, 0x00e5ff);
+    selectionIndicator.name = "selection-indicator";
+    selectionIndicator.userData.isSelectionHelper = true;
+    selectionIndicator.material.depthTest = false;
+    scene.add(selectionIndicator);
 }
-
 
 function removeHighlightFromSelectedModel() {
+    hideSelectionIndicator();
+}
+
+function removeHighlightFromAllModels() {
+    hideSelectionIndicator();
+}
+
+function clearSelectedModel(reason = "cleared") {
+    if (!selectedPlacedModel && !selectionIndicator) return;
+    hideSelectionIndicator();
+    selectedPlacedModel = null;
+    interactionState = "idle";
+    reportSelectionEvent("CLEAR", reason);
+}
+
+function selectPlacedModel(model, reason) {
+    if (!model || !placedModelRegistry.has(model)) return;
+
+    selectedPlacedModel = model;
+    interactionState = "selected";
+    highlightSelectedModel();
+    reportSelectionEvent("SET", `${model.userData.placedModelId} via ${reason}`);
+    showMenu("edit-menu");
+}
+
+function selectModelFromScreen(clientX, clientY, inputType) {
+    if (!arCanvas || !camera || !renderer) {
+        reportSelectionEvent("REJECT", "missing canvas, camera, or renderer");
+        return;
+    }
+
+    const rect = arCanvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) {
+        reportSelectionEvent("REJECT", "AR canvas has no viewport bounds");
+        return;
+    }
+
+    selectionNdc.set(
+        ((clientX - rect.left) / rect.width) * 2 - 1,
+        -((clientY - rect.top) / rect.height) * 2 + 1,
+    );
+
+    const raycastCamera = getActiveRaycastCamera();
+    if (!raycastCamera) {
+        reportSelectionEvent("REJECT", "no active raycast camera");
+        return;
+    }
+
+    scene.updateMatrixWorld(true);
+    raycastCamera.updateMatrixWorld(true);
+    selectionRaycaster.setFromCamera(selectionNdc, raycastCamera);
+
+    const selectableModels = getAllPlacedModels();
+    const intersections = selectionRaycaster.intersectObjects(selectableModels, true);
+    const hit = intersections.find((intersection) =>
+        resolvePlacedModelRoot(intersection.object),
+    );
+    const selectedRoot = hit ? resolvePlacedModelRoot(hit.object) : null;
+
+    reportSelectionEvent(
+        "TAP",
+        `${inputType} (${Math.round(clientX)},${Math.round(clientY)}) ` +
+        `ndc ${selectionNdc.x.toFixed(2)},${selectionNdc.y.toFixed(2)} ` +
+        `models ${selectableModels.length} hits ${intersections.length}` +
+        (selectedRoot ? ` -> ${selectedRoot.userData.placedModelId}` : " -> empty"),
+    );
+
+    if (selectedRoot) {
+        selectPlacedModel(selectedRoot, "screen tap");
+        return;
+    }
 
     if (selectedPlacedModel) {
-
-        selectedPlacedModel.traverse(
-            (child) => {
-
-                if (child.isMesh) {
-
-                    child.material.emissive
-                        .setHex(
-                            0x000000
-                        );
-                }
-            }
-        );
+        clearSelectedModel("empty screen tap");
+        showMenu("menu-bar");
     }
 }
 
+function isInteractiveUiTarget(target) {
+    return target instanceof Element && Boolean(target.closest(
+        "button, input, select, textarea, a, [role='button'], .menu-item, " +
+        "#dynamic-menu, #map-window, #confirmation-dialog, " +
+        "#delete-confirmation-dialog, #info-dialog, #xr-diagnostics-toggle, " +
+        "#xr-diagnostic-panel, #gps-localization-status",
+    ));
+}
 
-function removeHighlightFromAllModels() {
+function installSelectionInput() {
+    removeSelectionInput();
 
-    scene.traverse(
-        (child) => {
-
-            if (
-                child.isMesh &&
-                child.material &&
-                child.material.emissive
-            ) {
-
-                child.material.emissive
-                    .setHex(
-                        0x000000
-                    );
-            }
+    const inCanvasBounds = (x, y) => {
+        const rect = arCanvas?.getBoundingClientRect();
+        return Boolean(rect && x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom);
+    };
+    const begin = (pointerId, x, y, target, inputType) => {
+        if (isInteractiveUiTarget(target) || !inCanvasBounds(x, y)) return;
+        selectionInputState = { pointerId, startX: x, startY: y, moved: false, inputType };
+        reportSelectionEvent("INPUT", `${inputType} start (${Math.round(x)},${Math.round(y)})`);
+    };
+    const move = (pointerId, x, y) => {
+        if (!selectionInputState || selectionInputState.pointerId !== pointerId) return;
+        selectionInputState.moved ||= Math.hypot(
+            x - selectionInputState.startX,
+            y - selectionInputState.startY,
+        ) > TAP_MOVE_THRESHOLD_PX;
+    };
+    const finish = (pointerId, x, y) => {
+        if (!selectionInputState || selectionInputState.pointerId !== pointerId) return;
+        const input = selectionInputState;
+        selectionInputState = null;
+        if (!input.moved && inCanvasBounds(x, y)) {
+            selectModelFromScreen(x, y, input.inputType);
+        } else if (input.moved) {
+            reportSelectionEvent("IGNORE", `${input.inputType} drag`);
         }
-    );
+    };
+
+    if (window.PointerEvent) {
+        const onPointerDown = (event) => {
+            if (!event.isPrimary || event.button > 0) return;
+            begin(event.pointerId, event.clientX, event.clientY, event.target, event.pointerType || "pointer");
+        };
+        const onPointerMove = (event) => move(event.pointerId, event.clientX, event.clientY);
+        const onPointerUp = (event) => finish(event.pointerId, event.clientX, event.clientY);
+        const onPointerCancel = (event) => {
+            if (selectionInputState?.pointerId === event.pointerId) selectionInputState = null;
+        };
+        document.addEventListener("pointerdown", onPointerDown, true);
+        document.addEventListener("pointermove", onPointerMove, true);
+        document.addEventListener("pointerup", onPointerUp, true);
+        document.addEventListener("pointercancel", onPointerCancel, true);
+        selectionInputCleanup = () => {
+            document.removeEventListener("pointerdown", onPointerDown, true);
+            document.removeEventListener("pointermove", onPointerMove, true);
+            document.removeEventListener("pointerup", onPointerUp, true);
+            document.removeEventListener("pointercancel", onPointerCancel, true);
+        };
+    } else {
+        const onTouchStart = (event) => {
+            const touch = event.changedTouches[0];
+            if (touch) begin(touch.identifier, touch.clientX, touch.clientY, event.target, "touch");
+        };
+        const onTouchMove = (event) => {
+            const touch = event.changedTouches[0];
+            if (touch) move(touch.identifier, touch.clientX, touch.clientY);
+        };
+        const onTouchEnd = (event) => {
+            const touch = event.changedTouches[0];
+            if (touch) finish(touch.identifier, touch.clientX, touch.clientY);
+        };
+        document.addEventListener("touchstart", onTouchStart, true);
+        document.addEventListener("touchmove", onTouchMove, true);
+        document.addEventListener("touchend", onTouchEnd, true);
+        selectionInputCleanup = () => {
+            document.removeEventListener("touchstart", onTouchStart, true);
+            document.removeEventListener("touchmove", onTouchMove, true);
+            document.removeEventListener("touchend", onTouchEnd, true);
+        };
+    }
+}
+
+function removeSelectionInput() {
+    selectionInputCleanup?.();
+    selectionInputCleanup = null;
+    selectionInputState = null;
 }
 
 
@@ -793,12 +855,13 @@ export function confirmDelete(
         selectedPlacedModel
     ) {
 
-        placedModelsRoot.remove(
-            selectedPlacedModel
-        );
+        const modelToDelete = selectedPlacedModel;
+        clearSelectedModel("deleted");
+        unregisterPlacedModel(modelToDelete);
 
-        selectedPlacedModel =
-            null;
+        placedModelsRoot.remove(
+            modelToDelete
+        );
 
         showMenu(
             'menu-bar'
@@ -895,6 +958,8 @@ export function updateRotation(
 
     if (selectedPlacedModel) {
 
+        interactionState = "rotating";
+
         const radians =
             (value / 180) *
             Math.PI;
@@ -915,6 +980,12 @@ export function updateRotation(
             currentRotationDisplay.textContent =
                 value;
         }
+
+        reportSelectionEvent(
+            "ROTATE",
+            `${selectedPlacedModel.userData.placedModelId} y=${value}`,
+        );
+        interactionState = "selected";
     }
 }
 
@@ -1004,6 +1075,8 @@ export function updateScale(
 
     if (selectedPlacedModel) {
 
+        interactionState = "scaling";
+
         const scale =
             minScale +
             (percentValue / 100) *
@@ -1028,6 +1101,12 @@ export function updateScale(
             scaleValueDisplay.textContent =
                 `${parseInt(percentValue, 10)}%`;
         }
+
+        reportSelectionEvent(
+            "SCALE",
+            `${selectedPlacedModel.userData.placedModelId} scale=${scale.toFixed(3)}`,
+        );
+        interactionState = "selected";
     }
 }
 
@@ -1165,12 +1244,18 @@ export function moveModelDynamic(
 ) {
 
     if (selectedPlacedModel) {
+        interactionState = "moving";
         const worldDelta = new THREE.Vector3();
         worldDelta[axis] = value;
         worldDelta.applyQuaternion(
             placedModelsRoot.quaternion.clone().invert(),
         );
         selectedPlacedModel.position.add(worldDelta);
+        reportSelectionEvent(
+            "MOVE",
+            `${selectedPlacedModel.userData.placedModelId} ${axis}=${value}`,
+        );
+        interactionState = "selected";
     }
 }
 
@@ -1409,9 +1494,13 @@ export async function activateXR(sceneData = null) {
   sceneModelsLoaded = false;
   calibrationOffset = { x: 0, y: 0, z: 0, rotationY: 0 };
   calibrationConfirmed = false;
+  placedModelRegistry.clear();
+  nextPlacedModelId = 1;
+  clearSelectedModel("new XR session");
 
   const canvas = document.createElement("canvas");
-  const renderer = new THREE.WebGLRenderer({
+  arCanvas = canvas;
+  renderer = new THREE.WebGLRenderer({
     alpha: true,
     antialias: true,
     canvas,
@@ -1419,6 +1508,8 @@ export async function activateXR(sceneData = null) {
 
   document.body.appendChild(canvas);
 
+  canvas.style.touchAction = "none";
+  canvas.style.userSelect = "none";
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.xr.enabled = true;
   renderer.xr.setReferenceSpaceType("local");
@@ -1477,6 +1568,8 @@ export async function activateXR(sceneData = null) {
     console.error("[XR] Failed to start session:", error);
     renderer.dispose();
     canvas.remove();
+    renderer = null;
+    arCanvas = null;
     currentSession = null;
     showInfoDialog("Die AR-Session konnte nicht gestartet werden.");
     return;
@@ -1496,10 +1589,19 @@ export async function activateXR(sceneData = null) {
   currentSession.addEventListener("end", () => {
     reportXRSessionEnded();
     console.log("AR session ended");
+    removeSelectionInput();
+    hideSelectionIndicator();
+    hitTestSource.cancel();
+    renderer?.setAnimationLoop(null);
+    renderer?.dispose();
+    arCanvas?.remove();
+    renderer = null;
+    arCanvas = null;
+    currentSession = null;
     window.location.reload();
   });
 
-  canvas.addEventListener("pointerdown", selectModelFromScene);
+  installSelectionInput();
 
   renderer.setAnimationLoop((time, frame) => {
     let hitResultCount = null;
@@ -1529,6 +1631,10 @@ export async function activateXR(sceneData = null) {
       } else if (reticle) {
         reticle.visible = false;
       }
+    }
+
+    if (selectionIndicator && selectedPlacedModel) {
+      selectionIndicator.update();
     }
 
     renderer.render(scene, camera);

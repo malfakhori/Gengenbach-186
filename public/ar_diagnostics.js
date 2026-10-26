@@ -350,6 +350,12 @@ export function reportDiagnosticError(type, error) {
   addEvent(type, formatError(error));
 }
 
+// Selection is event-driven rather than frame-driven. Keeping it here makes a
+// device report useful without filling the panel while the camera is moving.
+export function reportSelectionEvent(type, detail) {
+  addEvent("SELECT " + type, detail);
+}
+
 export function recordXRFrame({
   hitResultCount,
   reticleVisible,

@@ -123,11 +123,11 @@ export let models = {
 
   fountain: {
     name: "Fountain",
-    image: "assets/previewImages/fountain.PNG",
-    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/fountain_model/scene.gltf",
-    scale: { x: 0.001, y: 0.001, z: 0.001 },
-    minScale: 0.0005,
-    maxScale: 0.005,
+    image: "assets/models/Ahorn/Ahorn.png",
+    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/Ahorn/Ahorn.glb",
+    scale: { x: 0.1, y: 0.1, z: 0.1 },
+    minScale: 0.01,
+    maxScale: 0.5,
   },
 };
 

@@ -1,263 +1,346 @@
-```html
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="de">
+
 <head>
-    <title>three.js r180 - AR Hit Test</title>
-    <meta charset="utf-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta property="og:title" content="three.js r180 - AR hit test">
-    <meta property="og:type" content="website">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            font-family: Arial, sans-serif;
-        }
+  <title>Gengenbach AR Projekt</title>
 
-        #info {
-            position: absolute;
-            top: 10px;
-            width: 100%;
-            text-align: center;
-            color: #fff;
-            z-index: 1;
-            pointer-events: none;
-            text-shadow: 0 1px 3px #000;
-        }
+  <link rel="stylesheet" href="style.css">
 
-        #info a {
-            color: #fff;
-            pointer-events: auto;
-        }
-
-        #status {
-            position: absolute;
-            top: 50px;
-            left: 10px;
-            right: 10px;
-            color: white;
-            background: rgba(0, 0, 0, 0.65);
-            padding: 8px;
-            border-radius: 5px;
-            font-size: 13px;
-            z-index: 2;
-            pointer-events: none;
-        }
-    </style>
-
-    <script type="importmap">
+  <script type="importmap">
     {
-        "imports": {
-            "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
-            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
-        }
+      "imports": {
+        "three": "https://unpkg.com/three@0.186.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.186.0/examples/jsm/"
+      }
     }
-    </script>
+  </script>
 </head>
 
 <body>
-    <div id="info">
-        <a href="https://threejs.org" target="_blank" rel="noopener">
-            three.js
-        </a>
-        r180 - AR Hit Test
+
+  <!-- ============================================================
+       DEBUG
+       ============================================================ -->
+
+  <div id="debug-container">
+    <div id="debug-console"></div>
+    <button id="debug-toggle-btn"></button>
+  </div>
+
+
+  <!-- ============================================================
+       STANDARDMENÜ
+       ============================================================ -->
+
+  <div id="menu-bar">
+
+    <div
+      class="menu-item"
+      id="add-section"
+      onclick="showMenu('add-menu')">
+
+      <img
+        src="assets/icons/add-icon.png"
+        alt="Hinzufügen" />
+
     </div>
 
-    <div id="status">Initializing WebXR...</div>
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { ARButton } from 'three/addons/webxr/ARButton.js';
+    <div
+      class="menu-item"
+      onclick="showMenu('map-window')">
 
-        let camera;
-        let scene;
-        let renderer;
-        let reticle;
+      <img
+        src="assets/icons/map-icon.png"
+        alt="Karte" />
 
-        let hitTestSource = null;
-        let hitTestSourceRequested = false;
+    </div>
 
-        const statusElement = document.getElementById('status');
 
-        function setStatus(message) {
-            statusElement.textContent = message;
-            console.log('[AR Hit Test]', message);
-        }
+    <div
+      class="menu-item"
+      id="options-section"
+      onclick="showMenu('options-menu')">
 
-        init();
+      <img
+        src="assets/icons/options-icon.png"
+        alt="Optionen" />
 
-        function init() {
-            console.log('Three.js revision:', THREE.REVISION);
-            setStatus('Three.js revision: ' + THREE.REVISION);
+    </div>
 
-            scene = new THREE.Scene();
+  </div>
 
-            camera = new THREE.PerspectiveCamera(
-                70,
-                window.innerWidth / window.innerHeight,
-                0.01,
-                20
-            );
 
-            const light = new THREE.HemisphereLight(
-                0xffffff,
-                0xbbbbff,
-                3
-            );
+  <!-- ============================================================
+       HINZUFÜGEN-MENÜ
+       ============================================================ -->
 
-            light.position.set(0.5, 1, 0.25);
-            scene.add(light);
+  <div
+    id="add-menu"
+    class="menu-placeholder">
+  </div>
 
-            renderer = new THREE.WebGLRenderer({
-                antialias: true,
-                alpha: true
-            });
 
-            renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.xr.enabled = true;
+  <!-- ============================================================
+       BEARBEITEN-MENÜ
+       ============================================================ -->
 
-            document.body.appendChild(renderer.domElement);
+  <div
+    id="edit-menu"
+    class="menu-placeholder">
 
-            const arButton = ARButton.createButton(renderer, {
-                requiredFeatures: ['hit-test']
-            });
+    <div
+      class="menu-item"
+      onclick="openRotationMenu()">
 
-            document.body.appendChild(arButton);
+      <img
+        src="assets/icons/rotate-icon.png"
+        alt="Rotation" />
 
-            const geometry = new THREE.CylinderGeometry(
-                0.1, 0.1, 0.2, 32
-            ).translate(0, 0.1, 0);
+    </div>
 
-            function onSelect() {
-                if (!reticle.visible) {
-                    setStatus('Select ignored: no surface detected.');
-                    return;
-                }
 
-                const material = new THREE.MeshPhongMaterial({
-                    color: Math.random() * 0xffffff
-                });
+    <div
+      class="menu-item"
+      onclick="openScaleMenu()">
 
-                const mesh = new THREE.Mesh(geometry, material);
+      <img
+        src="assets/icons/scale-icon.png"
+        alt="Skalierung" />
 
-                reticle.matrix.decompose(
-                    mesh.position,
-                    mesh.quaternion,
-                    mesh.scale
-                );
+    </div>
 
-                mesh.scale.y = Math.random() * 2 + 1;
 
-                scene.add(mesh);
-                setStatus('Object placed successfully.');
-            }
+    <div
+      class="menu-item"
+      onclick="openMoveMenu()">
 
-            const controller = renderer.xr.getController(0);
-            controller.addEventListener('select', onSelect);
-            scene.add(controller);
+      <img
+        src="assets/icons/move-icon.png"
+        alt="Bewegen" />
 
-            reticle = new THREE.Mesh(
-                new THREE.RingGeometry(0.15, 0.2, 32)
-                    .rotateX(-Math.PI / 2),
-                new THREE.MeshBasicMaterial({
-                    color: 0xffffff
-                })
-            );
+    </div>
 
-            reticle.matrixAutoUpdate = false;
-            reticle.visible = false;
-            scene.add(reticle);
 
-            window.addEventListener('resize', onWindowResize);
+    <div
+      class="menu-item"
+      onclick="deleteModel()">
 
-            renderer.setAnimationLoop(animate);
+      <img
+        src="assets/icons/delete-icon.png"
+        alt="Löschen" />
 
-            setStatus('Ready. Start AR and scan a surface.');
-        }
+    </div>
 
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
 
-            renderer.setSize(
-                window.innerWidth,
-                window.innerHeight
-            );
-        }
+    <div
+      class="menu-item"
+      onclick="completeEditing()">
 
-        function animate(timestamp, frame) {
-            if (frame) {
-                const session = renderer.xr.getSession();
-                const referenceSpace = renderer.xr.getReferenceSpace();
+      <img
+        src="assets/icons/check-icon.png"
+        alt="Fertigstellen" />
 
-                if (!session || !referenceSpace) {
-                    renderer.render(scene, camera);
-                    return;
-                }
+    </div>
 
-                if (!hitTestSourceRequested) {
-                    setStatus('AR session active. Requesting hit-test source...');
+  </div>
 
-                    session.requestReferenceSpace('viewer')
-                        .then((viewerSpace) => {
-                            return session.requestHitTestSource({
-                                space: viewerSpace
-                            });
-                        })
-                        .then((source) => {
-                            hitTestSource = source;
-                            setStatus('Hit-test source ready. Scan a surface.');
-                        })
-                        .catch((error) => {
-                            console.error('Hit-test source error:', error);
-                            setStatus(
-                                'Hit-test source failed: ' + error.message
-                            );
-                        });
 
-                    session.addEventListener('end', () => {
-                        hitTestSourceRequested = false;
-                        hitTestSource = null;
-                        reticle.visible = false;
-                        setStatus('AR session ended.');
-                    }, { once: true });
+  <!-- ============================================================
+       OPTIONEN-MENÜ
+       ============================================================ -->
 
-                    hitTestSourceRequested = true;
-                }
+  <div
+    id="options-menu"
+    class="menu-placeholder">
 
-                if (hitTestSource) {
-                    const results = frame.getHitTestResults(hitTestSource);
+    <div
+      class="menu-item"
+      onclick="exitAR()">
 
-                    if (results.length > 0) {
-                        const hit = results[0];
-                        const pose = hit.getPose(referenceSpace);
+      <img
+        src="assets/icons/exit-icon.png"
+        alt="Beenden" />
 
-                        if (pose) {
-                            reticle.visible = true;
+    </div>
 
-                            reticle.matrix.fromArray(
-                                pose.transform.matrix
-                            );
 
-                            setStatus(
-                                'Surface detected. Tap to place an object.'
-                            );
-                        }
-                    } else {
-                        reticle.visible = false;
-                        setStatus(
-                            'Hit-test source active; no surface detected yet.'
-                        );
-                    }
-                }
-            }
+    <div
+      class="menu-item"
+      onclick="downloadScene()">
 
-            renderer.render(scene, camera);
-        }
-    </script>
+      <img
+        src="assets/icons/download-icon.png"
+        alt="Download" />
+
+    </div>
+
+
+    <div
+      class="menu-item calibration-menu-item"
+      role="button"
+      tabindex="0"
+      onclick="openCalibrationMenu()">
+      Position<br>kalibrieren
+    </div>
+
+
+    <div
+      class="menu-item"
+      onclick="showMenu('menu-bar')">
+
+      <img
+        src="assets/icons/back-icon.png"
+        alt="Zurück" />
+
+    </div>
+
+  </div>
+
+
+  <!-- ============================================================
+       DYNAMISCHES MENÜ
+       ============================================================ -->
+
+  <div id="dynamic-menu"></div>
+
+
+  <!-- ============================================================
+       BESTÄTIGUNGSDIALOG LÖSCHEN
+       ============================================================ -->
+
+  <div id="delete-confirmation-dialog">
+
+    <div class="dialog-overlay"></div>
+
+    <div class="dialog-box">
+
+      <p id="delete-confirmation-text">
+        Möchten Sie das Modell wirklich löschen?
+      </p>
+
+      <button onclick="confirmDelete(true)">
+        Ja
+      </button>
+
+      <button onclick="confirmDelete(false)">
+        Nein
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- ============================================================
+       BESTÄTIGUNGSDIALOG BEENDEN
+       ============================================================ -->
+
+  <div id="confirmation-dialog">
+
+    <div class="dialog-overlay"></div>
+
+    <div class="dialog-box">
+
+      <p>
+        Möchten Sie die AR-Session wirklich verlassen?
+      </p>
+
+      <button onclick="confirmExit(true)">
+        Ja
+      </button>
+
+      <button onclick="confirmExit(false)">
+        Nein
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- ============================================================
+       INFORMATIONS-DIALOG
+       ============================================================ -->
+
+  <div id="info-dialog">
+
+    <div class="dialog-overlay"></div>
+
+    <div class="dialog-box">
+
+      <p id="info-text">
+        Hier kommt die Nachricht hin
+      </p>
+
+      <button onclick="closeInfoDialog()">
+        OK
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- ============================================================
+       MAP WINDOW
+       ============================================================ -->
+
+  <div
+    id="map-window"
+    class="menu-placeholder">
+
+    <div id="map-container"></div>
+
+    <div
+      class="menu-item map-back-button"
+      onclick="showMenu('menu-bar')">
+
+      <img
+        src="assets/icons/back-icon.png"
+        alt="Zurück" />
+
+    </div>
+
+  </div>
+
+
+  <!-- ============================================================
+       APP VERSION
+       Change this manually when needed.
+       ============================================================ -->
+
+  <div id="app-version">
+    v186.1
+  </div>
+
+
+  <!-- ============================================================
+       JAVASCRIPT
+       ============================================================ -->
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <script type="module" src="ar_app.js"></script>
+
+
+  <!-- ============================================================
+       BUTTON SOUND
+       ============================================================ -->
+
+  <audio
+    id="button-sound"
+    src="assets/sounds/button-sound.mp3"
+    preload="auto">
+  </audio>
+
 </body>
+
 </html>
-```

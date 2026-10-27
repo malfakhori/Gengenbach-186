@@ -79,6 +79,14 @@ menus.forEach(id => {
 
 
 export let models = {
+  chair: {
+    name: "Chair",
+    image: "assets/models/Chair/Chair.png",
+    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/Chair/Chair.glb",
+    scale: { x: 0.1, y: 0.1, z: 0.1 },
+    minScale: 0.05,
+    maxScale: 0.5,
+  },
   // Trees
   ahorn: {
     name: "Ahorn",

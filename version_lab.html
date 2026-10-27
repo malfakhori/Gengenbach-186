@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101923">
+  <title>Three.js WebXR AR Hit-Test — Version Lab</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101923;
+      --panel: #141f2b;
+      --panel2: #1b2938;
+      --border: #304050;
+      --text: #f2f6fb;
+      --muted: #bdc8d5;
+      --blue: #1683f8;
+      --green: #31d46a;
+      --yellow: #ffc857;
+      --red: #ff6464;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body { padding: 18px; }
+    header { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; margin-bottom: 20px; }
+    h1 { font-size: clamp(1.35rem, 2.5vw, 2rem); line-height: 1.2; margin: 0 0 8px; }
+    .subtitle { margin: 0; color: var(--muted); line-height: 1.5; }
+    a { color: #75bdff; }
+    .source-link { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--border); background: var(--panel2); border-radius: 9px; padding: 11px 14px; text-decoration: none; white-space: nowrap; }
+    .layout { display: grid; grid-template-columns: minmax(300px, 390px) minmax(0, 1fr); gap: 14px; align-items: stretch; }
+    .sidebar { background: linear-gradient(160deg, #15212d, #101923); border: 1px solid var(--border); border-radius: 12px; padding: 18px; min-width: 0; }
+    h2 { font-size: 1.05rem; margin: 0 0 12px; }
+    h3 { font-size: 1rem; margin: 0 0 10px; }
+    .section { padding-bottom: 18px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+    .section:last-child { border-bottom: 0; padding-bottom: 0; margin-bottom: 0; }
+    label { display: block; font-weight: 600; margin-bottom: 8px; }
+    select, button { font: inherit; }
+    select { width: 100%; padding: 12px; border-radius: 8px; color: var(--text); background: #1b2938; border: 1px solid #405365; }
+    .help { color: var(--muted); font-size: .92rem; line-height: 1.45; margin: 8px 0 0; }
+    button { cursor: pointer; }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    .primary, .secondary, .danger { width: 100%; border: 1px solid transparent; border-radius: 9px; padding: 13px 14px; font-weight: 700; }
+    .primary { color: white; background: var(--blue); }
+    .secondary { color: var(--text); background: #202f40; border-color: #3a4d60; }
+    .danger { color: white; background: #712d36; border-color: #a34650; }
+    .checks { display: grid; gap: 9px; }
+    .check { display: flex; align-items: center; gap: 9px; font-weight: 400; margin: 0; }
+    .check input { width: 18px; height: 18px; accent-color: var(--blue); }
+    .status-card { border: 1px solid var(--border); border-radius: 8px; padding: 11px 12px; line-height: 1.45; overflow-wrap: anywhere; }
+    .status-line { display: flex; align-items: center; gap: 9px; font-weight: 650; margin-bottom: 4px; }
+    .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--green); flex: 0 0 auto; }
+    .dot.warn { background: var(--yellow); }
+    .dot.error { background: var(--red); }
+    #statusDetail { color: var(--muted); font-size: .9rem; }
+    #log { width: 100%; height: 130px; resize: vertical; border: 1px solid #405365; border-radius: 7px; background: #0d141d; color: #e2eaf4; padding: 10px; font: 12px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .stage { position: relative; min-height: 650px; height: min(78vh, 900px); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: radial-gradient(ellipse at 50% 45%, #2b3c4b 0, #17232f 55%, #101923 100%); }
+    #viewport { position: absolute; inset: 0; }
+    #viewport canvas { display: block; width: 100%; height: 100%; }
+    .stage-banner, .instructions, .bottom-tips { position: absolute; z-index: 2; background: rgba(8, 13, 19, .78); backdrop-filter: blur(7px); border: 1px solid rgba(255,255,255,.12); border-radius: 10px; }
+    .stage-banner { left: 14px; top: 14px; max-width: min(420px, calc(100% - 28px)); padding: 14px 16px; }
+    .stage-banner strong { display: block; font-size: 1.1rem; margin-bottom: 5px; }
+    .stage-banner span { color: #d5dee8; font-size: .92rem; }
+    .instructions { right: 14px; top: 14px; width: min(300px, 42%); padding: 13px 15px; }
+    .instructions ol { padding-left: 20px; margin: 8px 0 0; color: #e0e7ef; font-size: .88rem; line-height: 1.55; }
+    .bottom-tips { left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 20px; justify-content: center; padding: 13px 18px; width: max-content; max-width: calc(100% - 28px); }
+    .tip { text-align: center; font-size: .82rem; color: #e0e7ef; max-width: 115px; }
+    .tip .symbol { font-size: 1.5rem; margin-bottom: 5px; }
+    .debug-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin-top: 10px; }
+    .debug-item { background: rgba(0,0,0,.18); border: 1px solid rgba(255,255,255,.08); padding: 7px 8px; border-radius: 6px; min-width: 0; }
+    .debug-item small { display: block; color: var(--muted); font-size: .72rem; }
+    .debug-item strong { display: block; font-size: .82rem; overflow-wrap: anywhere; }
+    .hidden { display: none !important; }
+    .footer { color: var(--muted); font-size: .82rem; line-height: 1.5; margin-top: 14px; }
+    @media (max-width: 900px) {
+      body { padding: 12px; }
+      header { flex-direction: column; }
+      .layout { grid-template-columns: 1fr; }
+      .stage { height: 65vh; min-height: 460px; }
+      .instructions { width: min(260px, 52%); }
+    }
+    @media (max-width: 560px) {
+      .stage { min-height: 440px; height: 62vh; }
+      .instructions { top: auto; bottom: 105px; right: 10px; width: 190px; padding: 9px 11px; }
+      .instructions ol { font-size: .75rem; }
+      .stage-banner { left: 10px; top: 10px; }
+      .bottom-tips { gap: 8px; padding: 9px; bottom: 10px; }
+      .tip { font-size: .7rem; max-width: 90px; }
+      .tip .symbol { font-size: 1.2rem; }
+      .source-link { white-space: normal; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Three.js WebXR AR Hit-Test — Version Lab</h1>
+      <p class="subtitle">Compare Three.js releases on your device. Select a version, start AR, and scan a textured surface.</p>
+    </div>
+    <a class="source-link" href="https://github.com/mrdoob/three.js" target="_blank" rel="noopener">↗ View Three.js source</a>
+  </header>
+
+  <main class="layout">
+    <aside class="sidebar">
+      <section class="section">
+        <h2>1. Select Three.js Version</h2>
+        <label for="version">Three.js revision</label>
+        <select id="version">
+          <option value="186" selected>r186 (latest in this test)</option>
+          <option value="185">r185</option>
+          <option value="184">r184</option>
+          <option value="183">r183</option>
+          <option value="182">r182</option>
+          <option value="181">r181</option>
+          <option value="180">r180</option>
+          <option value="179">r179</option>
+          <option value="178">r178</option>
+          <option value="176">r176</option>
+          <option value="170">r170</option>
+          <option value="160">r160</option>
+          <option value="150">r150</option>
+          <option value="126">r126</option>
+        </select>
+        <p class="help">Each selection loads matching Three.js and ARButton files from jsDelivr. Changing versions reloads the test page to avoid mixing releases.</p>
+      </section>
+
+      <section class="section">
+        <h2>2. Start AR</h2>
+        <button id="startButton" class="primary">◉ &nbsp; START AR</button>
+        <p class="help">Requires HTTPS (or localhost), Chrome, an ARCore-supported device, and camera permission.</p>
+      </section>
+
+      <section class="section">
+        <h3>Optional settings</h3>
+        <div class="checks">
+          <label class="check"><input id="showReticle" type="checkbox" checked> Show reticle</label>
+          <label class="check"><input id="enableLights" type="checkbox" checked> Enable scene lights</label>
+          <label class="check"><input id="autoPlace" type="checkbox"> Auto-place object every 2 seconds</label>
+          <label class="check"><input id="showDebug" type="checkbox" checked> Show debug information</label>
+        </div>
+      </section>
+
+      <section class="section">
+        <h3>Status</h3>
+        <div class="status-card">
+          <div class="status-line"><span id="statusDot" class="dot"></span><span id="statusTitle">Ready</span></div>
+          <div id="statusDetail">Select a version and press START AR.</div>
+        </div>
+        <div id="debugPanel" class="debug-grid">
+          <div class="debug-item"><small>Three.js revision</small><strong id="debugRevision">Not loaded</strong></div>
+          <div class="debug-item"><small>Immersive AR</small><strong id="debugSupport">Not checked</strong></div>
+          <div class="debug-item"><small>XR session</small><strong id="debugSession">Inactive</strong></div>
+          <div class="debug-item"><small>Hit-test source</small><strong id="debugSource">Not requested</strong></div>
+          <div class="debug-item"><small>Hit results / frame</small><strong id="debugHits">—</strong></div>
+          <div class="debug-item"><small>Objects placed</small><strong id="debugObjects">0</strong></div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h3>Log</h3>
+        <textarea id="log" readonly aria-label="Debug log">Page loaded.</textarea>
+        <div style="height:10px"></div>
+        <button id="clearLog" class="secondary">↻ &nbsp; Clear log</button>
+      </section>
+    </aside>
+
+    <section class="stage" aria-label="AR preview and instructions">
+      <div id="viewport"></div>
+      <div class="stage-banner">
+        <strong id="stageVersion">Three.js r186</strong>
+        <span id="stageMessage">Start AR to test surface detection.</span>
+      </div>
+      <div class="instructions">
+        <strong>How to test</strong>
+        <ol>
+          <li>Select a Three.js version.</li>
+          <li>Tap START AR and allow camera access.</li>
+          <li>Move slowly over a textured floor or table.</li>
+          <li>Look for the reticle.</li>
+          <li>Tap the screen to place a cylinder.</li>
+          <li>Try other versions and compare the logs.</li>
+        </ol>
+      </div>
+      <div class="bottom-tips">
+        <div class="tip"><div class="symbol">☝</div>Tap to place object</div>
+        <div class="tip"><div class="symbol">◎</div>Look for the reticle</div>
+        <div class="tip"><div class="symbol">▯</div>Move device to scan</div>
+        <div class="tip"><div class="symbol">☼</div>Use a well-lit area</div>
+      </div>
+    </section>
+  </main>
+
+  <p class="footer">
+    Diagnostic note: a camera view alone does not prove that AR tracking or hit testing is working.
+    If the source is created but results remain zero, compare against the official non-Three.js WebXR sample.
+    Version files are loaded from jsDelivr; internet access is required.
+  </p>
+
+  <script>
+    (() => {
+      const params = new URLSearchParams(location.search);
+      const initialRevision = params.get('rev') || '186';
+      const allowed = new Set(['186','185','184','183','182','181','180','179','178','176','170','160','150','126']);
+      const revision = allowed.has(initialRevision) ? initialRevision : '186';
+      const $ = (id) => document.getElementById(id);
+
+      $('version').value = revision;
+      $('stageVersion').textContent = `Three.js r${revision}`;
+      $('debugRevision').textContent = `r${revision}`;
+      log(`Page loaded. Selected Three.js r${revision}.`);
+      log('Tap START AR to begin.');
+
+      function log(message) {
+        const box = $('log');
+        const stamp = new Date().toLocaleTimeString();
+        box.value += `\n[${stamp}] ${message}`;
+        box.scrollTop = box.scrollHeight;
+      }
+
+      function setStatus(title, detail, kind = 'ok') {
+        $('statusTitle').textContent = title;
+        $('statusDetail').textContent = detail;
+        $('stageMessage').textContent = detail;
+        $('statusDot').className = 'dot' + (kind === 'warn' ? ' warn' : kind === 'error' ? ' error' : '');
+      }
+
+      $('version').addEventListener('change', () => {
+        const selected = $('version').value;
+        const next = new URL(location.href);
+        next.searchParams.set('rev', selected);
+        // Full reload ensures the core library and addons always use the same revision.
+        location.href = next.href;
+      });
+
+      $('showDebug').addEventListener('change', () => {
+        $('debugPanel').classList.toggle('hidden', !$('showDebug').checked);
+      });
+
+      $('clearLog').addEventListener('click', () => {
+        $('log').value = '';
+        log(`Log cleared. Three.js r${revision} selected.`);
+      });
+
+      $('startButton').addEventListener('click', async () => {
+        $('startButton').disabled = true;
+        setStatus('Loading', `Loading Three.js r${revision}...`, 'warn');
+        log(`Loading Three.js r${revision} from jsDelivr.`);
+
+        try {
+          const base = `https://cdn.jsdelivr.net/npm/three@0.${revision}.0`;
+          const THREE = await import(`${base}/build/three.module.js`);
+          const { ARButton } = await import(`${base}/examples/jsm/webxr/ARButton.js`);
+
+          $('debugRevision').textContent = `r${THREE.REVISION}`;
+          log(`Three.js loaded. THREE.REVISION = ${THREE.REVISION}.`);
+
+          if (!navigator.xr) {
+            $('debugSupport').textContent = 'navigator.xr unavailable';
+            throw new Error('WebXR is unavailable. Open this page in Chrome on an AR-capable Android device over HTTPS.');
+          }
+
+          const supported = await navigator.xr.isSessionSupported('immersive-ar');
+          $('debugSupport').textContent = supported ? 'Supported' : 'Not supported';
+          log(`immersive-ar supported: ${supported}.`);
+
+          if (!supported) {
+            throw new Error('This browser/runtime does not report immersive-ar support.');
+          }
+
+          const viewport = $('viewport');
+          viewport.innerHTML = '';
+
+          const scene = new THREE.Scene();
+          const camera = new THREE.PerspectiveCamera(70, viewport.clientWidth / viewport.clientHeight, 0.01, 20);
+          const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+          renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+          renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+          renderer.xr.enabled = true;
+          renderer.setClearColor(0x000000, 0);
+          viewport.appendChild(renderer.domElement);
+
+          let hemi = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 3);
+          hemi.position.set(0.5, 1, 0.25);
+          scene.add(hemi);
+
+          const geometry = new THREE.CylinderGeometry(0.1, 0.1, 0.2, 32).translate(0, 0.1, 0);
+          const reticleGeometry = new THREE.RingGeometry(0.15, 0.2, 32).rotateX(-Math.PI / 2);
+          const reticle = new THREE.Mesh(reticleGeometry, new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide }));
+          reticle.matrixAutoUpdate = false;
+          reticle.visible = false;
+          scene.add(reticle);
+
+          let hitTestSource = null;
+          let hitTestSourceRequested = false;
+          let hitCount = 0;
+          let placedCount = 0;
+          let lastHitStatus = '';
+          let lastAutoPlace = 0;
+          let ended = false;
+
+          const controller = renderer.xr.getController(0);
+          controller.addEventListener('select', () => {
+            if (!reticle.visible) {
+              log('Select event received, but no reticle/surface is visible.');
+              return;
+            }
+            placeObject();
+          });
+          scene.add(controller);
+
+          function placeObject() {
+            const material = $('enableLights').checked
+              ? new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff })
+              : new THREE.MeshBasicMaterial({ color: Math.random() * 0xffffff });
+            const mesh = new THREE.Mesh(geometry, material);
+            reticle.matrix.decompose(mesh.position, mesh.quaternion, mesh.scale);
+            mesh.scale.y = Math.random() * 2 + 1;
+            scene.add(mesh);
+            placedCount++;
+            $('debugObjects').textContent = String(placedCount);
+            log(`Object placed (#${placedCount}).`);
+          }
+
+          const sessionOptions = { requiredFeatures: ['hit-test'] };
+          const button = ARButton.createButton(renderer, sessionOptions);
+          button.style.position = 'absolute';
+          button.style.bottom = '76px';
+          button.style.left = '50%';
+          button.style.transform = 'translateX(-50%)';
+          button.style.zIndex = '5';
+          button.style.padding = '12px 20px';
+          button.style.borderRadius = '8px';
+          button.style.border = '1px solid #7bbcff';
+          button.style.background = '#1683f8';
+          button.style.color = 'white';
+          button.style.fontWeight = '700';
+          document.body.appendChild(button);
+          $('startButton').classList.add('hidden');
+          setStatus('Ready', `Three.js r${THREE.REVISION} loaded. Use the AR button to start.`, 'ok');
+
+          renderer.setAnimationLoop((timestamp, frame) => {
+            if (frame) {
+              const session = renderer.xr.getSession();
+              const referenceSpace = renderer.xr.getReferenceSpace();
+
+              if (session) {
+                $('debugSession').textContent = 'Active';
+                if (!hitTestSourceRequested) {
+                  hitTestSourceRequested = true;
+                  $('debugSource').textContent = 'Requesting...';
+                  log('Requesting viewer reference space for hit testing.');
+
+                  session.requestReferenceSpace('viewer')
+                    .then((viewerSpace) => session.requestHitTestSource({ space: viewerSpace }))
+                    .then((source) => {
+                      hitTestSource = source;
+                      $('debugSource').textContent = 'Ready';
+                      log('Hit-test source created successfully.');
+                      setStatus('Scanning', 'Hit-test source ready. Move slowly to scan a surface.');
+                    })
+                    .catch((error) => {
+                      $('debugSource').textContent = 'Failed';
+                      log(`Hit-test source error: ${error.name || 'Error'}: ${error.message}`);
+                      setStatus('Hit-test source failed', error.message, 'error');
+                    });
+
+                  session.addEventListener('end', () => {
+                    hitTestSourceRequested = false;
+                    hitTestSource = null;
+                    ended = true;
+                    $('debugSession').textContent = 'Inactive';
+                    $('debugSource').textContent = 'Not requested';
+                    $('debugHits').textContent = '—';
+                    log('AR session ended.');
+                    button.remove();
+                    $('startButton').classList.remove('hidden');
+                    $('startButton').disabled = false;
+                    setStatus('Session ended', 'Select a version and start AR again.');
+                  }, { once: true });
+                }
+
+                if (hitTestSource && referenceSpace) {
+                  try {
+                    const results = frame.getHitTestResults(hitTestSource);
+                    $('debugHits').textContent = String(results.length);
+                    if (results.length > 0) {
+                      const pose = results[0].getPose(referenceSpace);
+                      if (pose) {
+                        reticle.matrix.fromArray(pose.transform.matrix);
+                        reticle.visible = $('showReticle').checked;
+                        hitCount++;
+                        if (lastHitStatus !== 'hit') {
+                          log('Surface hit detected: results returned.');
+                          setStatus('Surface detected', 'Tap the screen to place a cylinder.');
+                          lastHitStatus = 'hit';
+                        }
+                        if ($('autoPlace').checked && timestamp - lastAutoPlace > 2000) {
+                          placeObject();
+                          lastAutoPlace = timestamp;
+                        }
+                      }
+                    } else {
+                      reticle.visible = false;
+                      if (lastHitStatus !== 'miss') {
+                        log('Hit-test source active, but results.length = 0.');
+                        setStatus('Scanning', 'No surface result yet. Move slowly over a textured, well-lit surface.', 'warn');
+                        lastHitStatus = 'miss';
+                      }
+                    }
+                  } catch (error) {
+                    log(`getHitTestResults error: ${error.name}: ${error.message}`);
+                    setStatus('Hit-test result error', error.message, 'error');
+                  }
+                }
+              } else {
+                $('debugSession').textContent = 'Waiting';
+              }
+            }
+
+            if (!$('enableLights').checked) {
+              hemi.intensity = 0;
+            } else {
+              hemi.intensity = 3;
+            }
+            renderer.render(scene, camera);
+          });
+
+          const resize = () => {
+            const width = viewport.clientWidth || window.innerWidth;
+            const height = viewport.clientHeight || window.innerHeight;
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+          };
+          window.addEventListener('resize', resize);
+          window.addEventListener('pagehide', () => {
+            if (!ended) {
+              try { hitTestSource?.cancel(); } catch (_) {}
+              try { renderer.setAnimationLoop(null); } catch (_) {}
+              try { renderer.dispose(); } catch (_) {}
+            }
+          }, { once: true });
+
+          log('Test renderer initialized. Press the blue AR button to enter AR.');
+        } catch (error) {
+          console.error(error);
+          log(`ERROR: ${error.name || 'Error'}: ${error.message}`);
+          setStatus('Initialization failed', error.message, 'error');
+          $('startButton').disabled = false;
+        }
+      });
+
+      // Keep the sidebar button disabled until a version is loaded; loading starts only on click.
+      setStatus('Ready', `Three.js r${revision} selected. Press START AR to load and test.`);
+    })();
+  </script>
+</body>
+</html>

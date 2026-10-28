@@ -1588,15 +1588,15 @@ export async function activateXR(sceneData = null) {
   );
 
   // AR lighting
-  const ambientLight = new THREE.AmbientLight(0xffffff, 2.5);
+  const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
   scene.add(ambientLight);
 
-  const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x888888, 1.5);
+  const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x888888, 1.0);
   scene.add(hemisphereLight);
 
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
-  directionalLight.position.set(10, 20, 10);
-  scene.add(directionalLight);
+  //const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+  //directionalLight.position.set(10, 20, 10);
+  //scene.add(directionalLight);
 
   // Reticle
   gltfLoader.load(

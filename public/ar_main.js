@@ -124,8 +124,8 @@ export let models = {
     maxScale: 2.0,
   },
 
-  grass: {
-    name: "Grass",
+  grass2: {
+    name: "Grass02",
     image: "assets/models/Grass/grass_layer_1m.png",
     file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/Grass/grass_layer_1m.glb",
     scale: { x: 1.0, y: 1.0, z: 1.0 },
@@ -210,9 +210,9 @@ export let models = {
     name: "Bench",
     image: "assets/previewImages/bench.PNG",
     file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/bench_model/scene.gltf",
-    scale: { x: 0.1, y: 0.1, z: 0.1 },
-    minScale: 0.05,
-    maxScale: 0.5,
+    scale: { x: 0.5, y: 0.5, z: 0.5 },
+    minScale: 0.5,
+    maxScale: 1.0,
   },
 
   trashbin: {
@@ -233,22 +233,13 @@ export let models = {
     maxScale: 1,
   },
 
-  statue: {
-    name: "Statue",
-    image: "assets/previewImages/statue.PNG",
-    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/statue_model/scene.gltf",
-    scale: { x: 0.5, y: 0.5, z: 0.5 },
-    minScale: 0.05,
-    maxScale: 2,
-  },
-
   street_lamp: {
     name: "Street Lamp",
     image: "assets/previewImages/park_light.png",
     file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/street_lamp.glb",
-    scale: { x: 0.5, y: 0.5, z: 0.5 },
-    minScale: 0.2,
-    maxScale: 5,
+    scale: { x: 1.0, y: 1.0, z: 1.0 },
+    minScale: 0.6,
+    maxScale: 2.0,
   },
 };
 

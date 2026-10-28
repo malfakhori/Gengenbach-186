@@ -209,7 +209,7 @@ export let models = {
   bench: {
     name: "Bench",
     image: "assets/previewImages/bench.PNG",
-    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/bench_model/scene.gltf",
+    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/bench_model/Bench.glb",
     scale: { x: 0.5, y: 0.5, z: 0.5 },
     minScale: 0.5,
     maxScale: 1.0,
@@ -218,7 +218,7 @@ export let models = {
   trashbin: {
     name: "Trash bin",
     image: "assets/previewImages/trash_can.PNG",
-    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/trash_model/scene.gltf",
+    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/trash_model/Trashbin.glb",
     scale: { x: 0.03, y: 0.03, z: 0.03 },
     minScale: 0.01,
     maxScale: 0.1,
@@ -227,7 +227,7 @@ export let models = {
   fire_hydrant_model: {
     name: "Fire Hydrant",
     image: "assets/previewImages/hydrant.PNG",
-    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/fire_hydrant_model/scene.gltf",
+    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/fire_hydrant_model/Fire_hydrant.glb",
     scale: { x: 0.3, y: 0.3, z: 0.3 },
     minScale: 0.1,
     maxScale: 1,
@@ -236,7 +236,7 @@ export let models = {
   street_lamp: {
     name: "Street Lamp",
     image: "assets/previewImages/park_light.png",
-    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/street_lamp.glb",
+    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/street_lamp/street_lamp.glb",
     scale: { x: 1.0, y: 1.0, z: 1.0 },
     minScale: 0.6,
     maxScale: 2.0,

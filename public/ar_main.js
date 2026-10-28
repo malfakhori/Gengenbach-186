@@ -1366,6 +1366,29 @@ function updateLocalizationStatus(message, retry = false) {
 let pendingSceneData = null;
 let sceneModelsLoaded = false;
 
+function hasFiniteCoordinates(value) {
+  return Number.isFinite(value?.lat) && Number.isFinite(value?.lng);
+}
+
+function getSceneModelCoordinates(sceneData, model) {
+  if (!sceneData.relocateToCurrentGps) {
+    return { lat: model.lat, lng: model.lng };
+  }
+
+  if (!hasFiniteCoordinates(sceneData) || !hasFiniteCoordinates(model)) {
+    console.error("[Scene] Quartiersplatz has invalid geographic coordinates.");
+    return null;
+  }
+
+  // The existing loader positions models from their individual GPS values.
+  // Preserve each saved offset from the scene anchor, but apply it at the
+  // user's acquired location rather than the original scene location.
+  return {
+    lat: geoLocation.latitude + (model.lat - sceneData.lat),
+    lng: geoLocation.longitude + (model.lng - sceneData.lng),
+  };
+}
+
 async function startLocationLocalization() {
   updateLocalizationStatus("Standort wird stabilisiert …");
 
@@ -1410,7 +1433,10 @@ async function startLocationLocalization() {
         return;
       }
 
-      const { x, z } = leafletToThree(model.lat, model.lng);
+      const coordinates = getSceneModelCoordinates(pendingSceneData, model);
+      if (!coordinates) return;
+
+      const { x, z } = leafletToThree(coordinates.lat, coordinates.lng);
       const positionVector = new THREE.Vector3(x, model.position.y, z);
       placeModel(modelDefinition.file, positionVector, (placed) => {
         if (model.rotation) {

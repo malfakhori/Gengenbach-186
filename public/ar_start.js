@@ -20,7 +20,11 @@ let predefinedButton2 = null;
 /*   PREDEFINED SCENE        */
 /* ========================= */
 
-export async function loadPredefinedScene(filePath, fileName) {
+export async function loadPredefinedScene(
+  filePath,
+  fileName,
+  { relocateToCurrentGps = false } = {},
+) {
   try {
     const response = await fetch(filePath);
 
@@ -30,7 +34,11 @@ export async function loadPredefinedScene(filePath, fileName) {
 
     const data = await response.json();
 
-    sceneData = data;
+    // Keep the fetched scene data intact. This session-only marker is consumed
+    // by ar_main when Quartiersplatz is reconstructed after GPS acquisition.
+    sceneData = relocateToCurrentGps
+      ? { ...data, relocateToCurrentGps: true }
+      : data;
     sceneFileName = fileName;
 
     console.log("Vordefinierte Szene geladen:", fileName);
@@ -228,6 +236,7 @@ export function showStartScreen() {
     const success = await loadPredefinedScene(
       "scenes/gengenbach-plaza.json",
       "Quartiersplatz",
+      { relocateToCurrentGps: true },
     );
 
     if (success) {

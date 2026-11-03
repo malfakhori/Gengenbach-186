@@ -124,6 +124,15 @@ export let models = {
     maxScale: 2.0,
   },
 
+  Fountain: {
+    name: "Fountain",
+    image: "assets/models/Fountain/Fountain.png",
+    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/Fountain/Fountain.glb",
+    scale: { x: 1.0, y: 1.0, z: 1.0 },
+    minScale: 0.5,
+    maxScale: 2.0,
+  },
+
   grass2: {
     name: "Grass02",
     image: "assets/models/Grass/grass_layer_1m.png",

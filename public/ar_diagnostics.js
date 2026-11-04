@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-export const XR_DIAGNOSTICS_ENABLED = true; // Set to true temporarily for device validation
+export const XR_DIAGNOSTICS_ENABLED = false; // Set to true temporarily for device validation
 
 const SESSION_END_KEY = "gengenbach.xrDiagnostics.sessionEnded";
 const REFRESH_INTERVAL_MS = 1000;

@@ -1,5 +1,5 @@
 // Debug-Konsole aktivieren
-const debugConsoleEnabled = true;
+const debugConsoleEnabled = false;
 
 if (debugConsoleEnabled) {
     const debugConsole = document.getElementById('debug-console');

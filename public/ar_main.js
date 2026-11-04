@@ -951,12 +951,13 @@ export function openRotationMenu() {
     }
 
 
+    // YXZ separates a parent-space Y rotation from the model's pitch and roll.
+    const heading = new THREE.Euler().setFromQuaternion(
+        selectedPlacedModel.quaternion,
+        "YXZ"
+    ).y;
     const currentRotation =
-        Math.round(
-            THREE.MathUtils.radToDeg(
-                selectedPlacedModel.rotation.y
-            )
-        );
+        (Math.round(THREE.MathUtils.radToDeg(heading)) + 360) % 360;
 
 
     const dynamicMenu =
@@ -984,6 +985,7 @@ export function openRotationMenu() {
                 min="0"
                 max="360"
                 step="10"
+                value="${currentRotation}"
                 onchange="updateRotation('y', this.value)"
             >
         </label>
@@ -1009,8 +1011,19 @@ export function updateRotation(
             Math.PI;
 
 
-        selectedPlacedModel.rotation[axis] =
-            radians;
+        if (axis === "y") {
+            const heading = new THREE.Euler().setFromQuaternion(
+                selectedPlacedModel.quaternion,
+                "YXZ"
+            ).y;
+            const turn = new THREE.Quaternion().setFromAxisAngle(
+                new THREE.Vector3(0, 1, 0),
+                radians - heading
+            );
+            selectedPlacedModel.quaternion.premultiply(turn);
+        } else {
+            selectedPlacedModel.rotation[axis] = radians;
+        }
 
 
         const currentRotationDisplay =
@@ -1449,14 +1462,15 @@ async function startLocationLocalization() {
       const positionVector = new THREE.Vector3(x, model.position.y, z);
       placeModel(modelDefinition.file, positionVector, (placed) => {
         if (model.rotation) {
-          placed.rotation._x = model.rotation._x;
-          placed.rotation._y = model.rotation._y;
-          placed.rotation._z = model.rotation._z;
+          placed.rotation.set(
+            model.rotation._x,
+            model.rotation._y,
+            model.rotation._z,
+            model.rotation._order || "XYZ",
+          );
         }
         if (model.scale) {
-          placed.scale.x = model.scale.x;
-          placed.scale.y = model.scale.y;
-          placed.scale.z = model.scale.z;
+          placed.scale.set(model.scale.x, model.scale.y, model.scale.z);
         }
       });
     });

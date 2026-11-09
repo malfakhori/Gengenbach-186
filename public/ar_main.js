@@ -133,6 +133,15 @@ export let models = {
     maxScale: 2.0,
   },
 
+  grassyplot: {
+    name: "Grass02",
+    image: "assets/models/GrassyPlot/GrassyPlot.png",
+    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/GrassyPlot/GrassyPlot.glb",
+    scale: { x: 1.0, y: 1.0, z: 1.0 },
+    minScale: 0.5,
+    maxScale: 2.0,
+  },
+
   grass2: {
     name: "Grass02",
     image: "assets/models/Grass/grass_layer_1m.png",
@@ -224,14 +233,14 @@ export let models = {
     maxScale: 1.0,
   },
 
-  trashbin: {
-    name: "Trash bin",
-    image: "assets/previewImages/trash_can.PNG",
-    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/trash_model/Trashbin.glb",
-    scale: { x: 0.03, y: 0.03, z: 0.03 },
-    minScale: 0.01,
-    maxScale: 0.1,
-  },
+  //  trashbin: {
+  //    name: "Trash bin",
+  //    image: "assets/previewImages/trash_can.PNG",
+  //    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/trash_model/Trashbin.glb",
+  //    scale: { x: 0.03, y: 0.03, z: 0.03 },
+  //    minScale: 0.01,
+  //    maxScale: 0.1,
+  //  },
 
   fire_hydrant_model: {
     name: "Fire Hydrant",

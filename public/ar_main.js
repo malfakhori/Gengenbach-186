@@ -96,6 +96,22 @@ export let models = {
     minScale: 0.5,
     maxScale: 2.0,
   },
+  chair3: {
+    name: "Chair03",
+    image: "assets/models/Chair/Chair03.png",
+    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/Chair/Chair03.glb",
+    scale: { x: 1.0, y: 1.0, z: 1.0 },
+    minScale: 0.5,
+    maxScale: 2.0,
+  },
+  chair4: {
+    name: "Chair04",
+    image: "assets/models/Chair/Chair04.png",
+    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/Chair/Chair04.glb",
+    scale: { x: 1.0, y: 1.0, z: 1.0 },
+    minScale: 0.5,
+    maxScale: 2.0,
+  },
 
   table: {
     name: "Table",
@@ -132,9 +148,17 @@ export let models = {
     minScale: 0.5,
     maxScale: 2.0,
   },
+  Fountain5: {
+    name: "Fountain5",
+    image: "assets/models/Fountain/Fountain5.png",
+    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/Fountain/Fountain5.glb",
+    scale: { x: 1.0, y: 1.0, z: 1.0 },
+    minScale: 0.5,
+    maxScale: 2.0,
+  },
 
   grassyplot: {
-    name: "Grass02",
+    name: "GrassyPlot",
     image: "assets/models/GrassyPlot/GrassyPlot.png",
     file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/GrassyPlot/GrassyPlot.glb",
     scale: { x: 1.0, y: 1.0, z: 1.0 },
@@ -168,6 +192,16 @@ export let models = {
     minScale: 0.5,
     maxScale: 2.0,
   },
+
+  Bushe: {
+    name: "Bushe",
+    image: "assets/models/Bushe/Bushe.png",
+    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/Bushe/Bushe.glb",
+    scale: { x: 1.0, y: 1.0, z: 1.0 },
+    minScale: 0.5,
+    maxScale: 2.0,
+  },
+
   // Trees
   ahorn: {
     name: "Ahorn",
@@ -224,7 +258,7 @@ export let models = {
   },
 
   // Existing models
-  bench: {
+  /*   bench: {
     name: "Bench",
     image: "assets/previewImages/bench.PNG",
     file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/bench_model/Bench.glb",
@@ -233,14 +267,14 @@ export let models = {
     maxScale: 1.0,
   },
 
-  //  trashbin: {
-  //    name: "Trash bin",
-  //    image: "assets/previewImages/trash_can.PNG",
-  //    file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/trash_model/Trashbin.glb",
-  //    scale: { x: 0.03, y: 0.03, z: 0.03 },
-  //    minScale: 0.01,
-  //    maxScale: 0.1,
-  //  },
+    trashbin: {
+      name: "Trash bin",
+      image: "assets/previewImages/trash_can.PNG",
+      file: "https://raw.githubusercontent.com/malfakhori/Gengenbach-186/master/public/assets/models/trash_model/Trashbin.glb",
+      scale: { x: 0.03, y: 0.03, z: 0.03 },
+      minScale: 0.01,
+      maxScale: 0.1,
+    },
 
   fire_hydrant_model: {
     name: "Fire Hydrant",
@@ -258,7 +292,7 @@ export let models = {
     scale: { x: 1.0, y: 1.0, z: 1.0 },
     minScale: 0.6,
     maxScale: 2.0,
-  },
+  }, */
 };
 
 
